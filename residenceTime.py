@@ -344,7 +344,6 @@ def volFrame2bool ( inIndexFrameRange ):
 
 
 ##########
-
 def volFrameJumBack ( inIndexFrameRange, jumpBack ):
 
     # transform volFrame data into OnOffArray
