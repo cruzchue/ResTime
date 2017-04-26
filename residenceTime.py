@@ -4,6 +4,117 @@ import numpy as np
 import MDAnalysis as md
 
 
+##########################
+##########################
+
+def selInVol ( mdUniverse, volume, selFile ):
+    #
+    # selections in volume
+    #
+    #  INPUT
+    # =======
+    # - mdUniverse : MDanalysis universe
+    # - volume     : one volume line
+    # - selFile    : selection File containing all selection lines
+    #
+    #
+    #  OUTPUT
+    # ========
+    # - OnOffPos : 1D array with frame ranges (integers)
+    # - outTuple : tuple that contains outLine and outList
+    #              outLine : (1D array, int) containing number lines from selFile that cross volume
+    #              outList : (list) short version of selFile, contains only lines that cross volume
+    #
+    
+    # 1.- order selection data
+    # -------------------------
+
+    # read selFile into selData
+    inFile=open(selFile, 'r')
+    selData=inFile.read().splitlines()
+    inFile.close()
+    
+    # selData to selTuple
+    selTuple=()
+    for eachLine in selData:        
+        eachLine=eachLine.split()    
+        intLine=np.zeros((0), dtype=int)
+    
+        for eachValue in eachLine:
+            eachValue=int(eachValue)
+            intLine=np.append(intLine, eachValue )
+
+        selTuple=selTuple + (intLine,)
+
+    # join selections into 1D matrix
+    selMatrix=np.zeros((0), dtype=int)
+    for eachLine in selTuple:
+        selMatrix=np.hstack( (selMatrix , eachLine) )
+
+    selMatrix=np.unique(selMatrix)
+    selMatrix=sorted(selMatrix, key=int)
+
+    # string line for MDanalysis
+    selLine=''
+    for eachVal in selMatrix:
+        eachVal=str(eachVal)
+        selLine=selLine+eachVal
+        selLine=selLine+' '
+    
+
+    # 2.- particles in volume
+    # ------------------------
+
+    # number of frames
+    nFrames=len(mdUniverse.trajectory)
+        
+    # particle selection and volume for MDanalysis
+    strVolSel='( ' + volume + ' )' + ' and ' + '( bynum ' + selLine + ' )'
+
+    # find particles in volume
+    selInVol=np.zeros((0), dtype=int)    
+    for ts in mdUniverse.trajectory:
+        currSel=mdUniverse.select_atoms(strVolSel)    
+        currAtoms=currSel.indices # index number, no atom number
+
+        numAtoms=len(currAtoms)
+        if numAtoms > 0 :
+            currAtoms=currAtoms+1 # now, atom number 
+            selInVol=np.hstack( (selInVol , currAtoms) )
+        
+    # sort values
+    selInVol=np.unique(selInVol)
+    selInVol=np.sort(selInVol)
+    selCond=len(selInVol)
+
+
+    # 3.- output
+    # -----------
+
+    # pick values in volume
+    outList=[]
+    outLine=np.zeros((0), dtype=int)
+    countLine=0
+
+    if selCond > 0 :
+
+        for eachLine in selTuple:
+            intersectVal=np.intersect1d( eachLine, selInVol)
+            lenIntersect=len(intersectVal)
+        
+            if lenIntersect > 0 :            
+                eachLine = " ".join(str(elm) for elm in eachLine)
+                outList.append(eachLine)
+                outLine=np.hstack( (outLine , countLine) )
+
+            countLine+=1
+
+    outTuple=(outLine,outList)
+        
+    return outTuple
+    
+
+##########
 
 def frameInVol ( mdUniverse, volume, selection ):
     #
@@ -12,8 +123,8 @@ def frameInVol ( mdUniverse, volume, selection ):
     #  INPUT
     # =======
     # - mdUniverse : MDanalysis universe
-    # - volume     : list of volumes
-    # - selection  : list of selections
+    # - volume     : one volume
+    # - selection  : one selection
     #
     #
     #  OUTPUT
@@ -51,7 +162,7 @@ def inOutVol ( mdUniverse, volume, selection ):
     nFrames=len(mdUniverse.trajectory)
     
     # particle selection and volume
-    strVolSel='( ' + volume + ' )' + ' and ' + '( ' + selection + ' )'
+    strVolSel='( ' + volume + ' )' + ' and ' + '( bynum ' + selection + ' )'
     
     # out array for bool values
     OnOffArray=np.ones((nFrames), dtype=int)
