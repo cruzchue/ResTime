@@ -31,7 +31,7 @@ def frameInVolManySel ( mdUniverse, volume, selectionList ):
     # 2.-  matrix with index and frame ranges
     # ----------------------------------------
 
-    outM=np.zeros((0,3), dtype=int)
+    outM=np.zeros((0,4), dtype=int)
     
     for lineSel,sel in zip(lineInSelection, inSelection):
         
@@ -96,13 +96,6 @@ def selInVol ( mdUniverse, volume, selectionList ):
     
     # 1.- order selection data
     # -------------------------
-
-    #>>> # read selFile into selectionList
-    #>>> inFile=open(selFile, 'r')
-    #>>> selectionList=inFile.read().splitlines()
-    #>>> inFile.close()
-
-    #>>>>>>>
     
     outSel=[]
     outSelLine=np.zeros((0), dtype=int)
@@ -156,12 +149,27 @@ def frameInVol ( mdUniverse, volume, selection ):
     #
     #  OUTPUT
     # ========
-    # - OnOffPos : 1D array with frame ranges (integers)
+    # - OnOffFrame : nx3 array with [number of frames, start frame, end frame] (integers)
     #
 
     OnOffArray=inOutVol( mdUniverse, volume, selection )
     OnOffFrame=bool2frame( OnOffArray )
 
+    #>>>>>>>>>>>>>>
+    
+    # NEW: add column with number of frames
+    #      needed for split trajectories and regenerate bool
+
+    nFrames=len(mdUniverse.trajectory)
+    [iFrameRange,jFrameRange]=np.shape(OnOffFrame)
+    
+    colFrame=np.ones((iFrameRange,1), dtype=int)
+    colFrame=colFrame*nFrames
+    
+    OnOffFrame=np.hstack((colFrame,OnOffFrame))
+
+    #>>>>>>>>>>>>>>>>         
+    
     return OnOffFrame
 
 
